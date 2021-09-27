@@ -3,6 +3,8 @@ package display
 import (
 	"errors"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"code.rocketnine.space/tslocum/cview"
@@ -166,14 +168,20 @@ func normalizeURL(u string) string {
 	return parsed.String()
 }
 
-// fixUserURL will take a user-typed URL and add a gemini scheme to it if
-// necessary. It is not the same as normalizeURL, and that func should still
-// be used, afterward.
+// fixUserURL will take a user-typed URL and add a gemini or file scheme to
+// it if necessary. It is not the same as normalizeURL, and that func should
+// still be used, afterward.
 //
 // For example "example.com" will become "gemini://example.com", but
 // "//example.com" will be left untouched.
 func fixUserURL(u string) string {
-	if !strings.HasPrefix(u, "//") && !strings.HasPrefix(u, "gemini://") && !strings.Contains(u, "://") {
+	if u == "." || u == ".." || strings.HasPrefix(u, "./") || strings.HasPrefix(u, "../") {
+		// Find a file by relative path
+		wd, err := os.Getwd()
+		if err == nil {
+			u = "file://" + filepath.Join(wd, u)
+		}
+	} else if !strings.HasPrefix(u, "//") && !strings.HasPrefix(u, "gemini://") && !strings.Contains(u, "://") {
 		// Assume it's a Gemini URL
 		u = "gemini://" + u
 	}
